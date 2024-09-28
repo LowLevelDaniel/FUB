@@ -2,7 +2,7 @@
 
 
 1:
-	arm-none-eabi-as -o sector1/boot.o sector1/boot.as
+	arm-none-eabi-as -o sector1/boot.o sector1/boot.s
 	arm-none-eabi-ld -o sector1/boot.elf sector1/boot.o
 	arm-none-eabi-objcopy -O binary sector1/boot.elf sector1/boot.bin
 	qemu-img create -f raw sector1/boot.img 64M
