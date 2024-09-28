@@ -1,59 +1,38 @@
-.section .text
 .global _start
 
+.section .text
 _start:
-    b start
+    /* Set up the stack pointer */
+    ldr sp, =0x8000       /* Set the stack pointer to 0x8000 */
 
-start:
-    // Initialize UEFI
-    bl InitializeUEFI
+    /* Initialize UART */
+    bl init_uart
 
-    // Display "loading" message
-    ldr x0, =loadmsg
-    bl PrintString
+    /* Print "Hello, World!" */
+    ldr r0, =message
+    bl print_string
 
-    // Reboot the system
-    bl RebootSystem
+    /* Infinite loop */
+    b .
 
-InitializeUEFI:
-    // UEFI initialization code here
-    // Example: Set up the UEFI system table pointer
-    ldr x0, =SystemTable
-    // Additional UEFI initialization code
-    ret
+init_uart:
+    /* UART base address for VersatilePB */
+    ldr r1, =0x101f1000   /* UART1 base address */
+    /* Set baud rate and other configurations if needed here */
+    /* Placeholder for further UART setup */
+    bx lr
 
-PrintString:
-    // UEFI call to print string
-    // Example: Use UEFI Simple Text Output Protocol
-    ldr x1, =SystemTable
-    ldr x1, [x1, #56] // Offset for ConOut in UEFI System Table
-    ldr x2, =loadmsg
-    bl PrintStringUEFI
-    ret
-
-PrintStringUEFI:
-    // UEFI Simple Text Output Protocol - OutputString
-    ldr x0, [x1]
-    ldr x1, [x1, #8] // Offset for OutputString function
-    blr x1
-    ret
-
-RebootSystem:
-    // UEFI call to reboot system
-    // Example: Use UEFI Runtime Services
-    ldr x0, =SystemTable
-    ldr x0, [x0, #40] // Offset for RuntimeServices in UEFI System Table
-    ldr x1, [x0, #48] // Offset for ResetSystem function
-    mov x2, #0 // ResetType: EfiResetCold
-    mov x3, #0 // ResetStatus: EFI_SUCCESS
-    mov x4, #0 // DataSize: 0
-    mov x5, #0 // ResetData: NULL
-    blr x1
-    ret
-
-loadmsg:
-    .asciz "Loading OS...\n"
+print_string:
+    ldr r1, =0x101f1000   /* UART1 base address */
+.loop:
+    ldrb r2, [r0], #1     /* Load byte from string and post-increment pointer */
+    cmp r2, #0            /* Check if end of string (null terminator) */
+    beq .done             /* If yes, finish */
+    strb r2, [r1]         /* Send byte to UART */
+    b .loop               /* Repeat for next character */
+.done:
+    bx lr
 
 .section .data
-SystemTable:
-    .quad 0 // Placeholder for UEFI System Table pointer
+message:
+    .asciz "Hello, World!\n"  /* Null-terminated string */
