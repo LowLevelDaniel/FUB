@@ -2,37 +2,18 @@
 
 .section .text
 _start:
-    /* Set up the stack pointer */
-    ldr sp, =0x8000       /* Set the stack pointer to 0x8000 */
-
-    /* Initialize UART */
-    bl init_uart
-
-    /* Print "Hello, World!" */
-    ldr r0, =message
-    bl print_string
-
-    /* Infinite loop */
-    b .
-
-init_uart:
-    /* UART base address for VersatilePB */
-    ldr r1, =0x101f1000   /* UART1 base address */
-    /* Set baud rate and other configurations if needed here */
-    /* Placeholder for further UART setup */
-    bx lr
-
-print_string:
-    ldr r1, =0x101f1000   /* UART1 base address */
+    ldr sp, =0x8000               /* Set stack pointer */
+    ldr r0, =0x101f1000           /* UART base address */
+    ldr r1, =message
 .loop:
-    ldrb r2, [r0], #1     /* Load byte from string and post-increment pointer */
-    cmp r2, #0            /* Check if end of string (null terminator) */
-    beq .done             /* If yes, finish */
-    strb r2, [r1]         /* Send byte to UART */
-    b .loop               /* Repeat for next character */
+    ldrb r2, [r1], #1              /* Load byte */
+    cmp r2, #0                     /* Check for null terminator */
+    beq .done                      /* If end, exit */
+    strb r2, [r0]                 /* Output character */
+    b .loop                        /* Repeat */
 .done:
-    bx lr
+    b .done                        /* Loop infinitely */
 
 .section .data
 message:
-    .asciz "Hello, World!\n"  /* Null-terminated string */
+    .asciz "Hello, World!\n"      /* Null-terminated string */
