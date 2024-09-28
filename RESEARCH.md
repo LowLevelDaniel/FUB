@@ -10,10 +10,4 @@ windows can write a single installer that will automatically get the cpu type at
 if you think you can check the uefi or bios then try to understand how to write the assembly that checks this,
 i see no real way to do this unless arm and x86 ensure a copmatibility between each other to understand their type.
 
-#### How does the bios know the MBR
-
-#### How to create a MBR
-
-#### How does the uefi know the GPT
-
-#### How to create a GPT
+#### It seesm ARM can only be compatible with uefi if you don't want to be architecture specific
