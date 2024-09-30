@@ -19,8 +19,8 @@ iso:
 	cp combined.bin iso/boot/boot.bin
 	genisoimage -o boot.iso -b boot/boot.bin -no-emul-boot -boot-load-size 4 -boot-info-table iso
 
-test1: sector1/boot.img
-	qemu-system-x86_64 -drive format=raw,file=sector1/boot.img -nographic
+test1:
+	qemu-system-x86_64 -drive format=raw,file=boot.img -nographic
 
 
 # 2:

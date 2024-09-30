@@ -133,5 +133,5 @@ rebootmsg:          .asciz "Press any key to reboot.\n"
 
 .fill (510-(.-_start)), 1, 0  # Pad with nulls up to 510 bytes (excl. boot magic)
 BootMagic: # magic bytes for BIOS
-  .byte 0xAA
   .byte 0x55
+  .byte 0xAA
