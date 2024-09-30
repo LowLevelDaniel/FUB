@@ -2,8 +2,6 @@
 .intel_syntax noprefix
 .text
 
-LOAD_SEGMENT = 0x1000
-
 .global _start
 
 _start:
@@ -29,33 +27,67 @@ bootsector:
  iBootSign:     .byte  0x29          # extended boot sector signature
  iVolID:        .ascii "seri"        # disk serial
  acVolumeLabel: .ascii "MYVOLUME   " # volume label
- acFSType:      .ascii "FAT16   "    # file system type
+ acFSType:      .ascii "        "    # file system type
 
-.func WriteString
-WriteString:
-  lodsb                   # load byte at ds:si into al (advancing si)
-  or     al, al           # test if character is 0 (end)
-  jz     WriteString_done # jump to end if 0.
+// Error Handling
+  .func WriteString
+  WriteString:
+    lodsb                   # load byte at ds:si into al (advancing si)
+    or     al, al           # test if character is 0 (end)
+    jz     WriteString_done # jump to end if 0.
 
-  mov    ah, 0x0e          # Subfunction 0xe of int 10h (video teletype output)
-  mov    bx, 9            # Set bh (page nr) to 0, and bl (attribute) to white (9)
-  int    0x10             # call BIOS interrupt.
+    mov    ah, 0x0e          # Subfunction 0xe of int 10h (video teletype output)
+    mov    bx, 9            # Set bh (page nr) to 0, and bl (attribute) to white (9)
+    int    0x10             # call BIOS interrupt.
 
-  jmp    WriteString      # Repeat for next character.
+    jmp    WriteString      # Repeat for next character.
+  WriteString_done:
+    retw
+  .endfunc
 
-WriteString_done:
-  retw
-.endfunc
+  .func Reboot
+  Reboot:
+    lea    si, rebootmsg # Load address of reboot message into si
+    call   WriteString   # print the string
+    xor    ax, ax        # subfuction 0
+    int    0x16          # call bios to wait for key
+    .byte  0xEA          # machine language to jump to FFFF:0000 (reboot) 
+    .word  0x0000
+    .word  0xFFFF
+  .endfunc
+// Sector2 Setup
+.func LoadKernel
+LoadKernel:
+  pusha
+  push dx
 
-.func Reboot
- Reboot:
-  lea    si, rebootmsg # Load address of reboot message into si
-  call   WriteString   # print the string
-  xor    ax, ax        # subfuction 0
-  int    0x16          # call bios to wait for key
-  .byte  0xEA          # machine language to jump to FFFF:0000 (reboot)
-  .word  0x0000
-  .word  0xFFFF
+  mov bx, 0x7e00
+	mov dh, 15
+	mov dl, iBootDrive
+  mov ah, 0x02
+	mov al, dh
+	mov ch, 0x00
+	mov dh, 0x00
+	mov cl, 0x02
+  int 0x13           # Call BIOS interrupt
+
+  # Jump to error handling if carry flag is set
+  lea  si, diskreaderr
+  jc disk_read_error
+
+  # check if we read expected count of sectors
+  # if not, show the message with error
+  pop dx
+  cmp dh, al
+  lea  si, invalidsectorcount
+  jne disk_read_error
+
+  # restore register values and ret
+  popa
+  ret
+disk_read_error:
+  call WriteString
+  call Reboot
 .endfunc
 
 start:
@@ -78,20 +110,28 @@ start:
   mov  dl, iBootDrive  # drive to reset
   xor  ax, ax          # subfunction 0
   int  0x13            # call interrupt 13h
-  jc   bootFailure     # display error message if carry set (error)  
+  jc   bootFailure     # display error message if carry set (error) 
+
+  # load second stage bootloader from disk
+  # sector2 will be at a set offset straight after this 512 byte boot sector
+  call LoadKernel
 
   # End of loader, for now. Reboot.
   call Reboot
 
 bootFailure:
-  lea  si, diskerror
+  lea  si, diskreseterr
   call WriteString
   call Reboot
 
 # PROGRAM DATA
-loadmsg:          .asciz "Loading OS...\n"
-diskerror:        .asciz "Disk error. "
-rebootmsg:        .asciz "Press any key to reboot.\n"
+loadmsg:            .asciz "Loading OS...\n"
+diskreseterr:       .asciz "Disk Reset Error. "
+diskreaderr:        .asciz "Disk read Error. "
+invalidsectorcount: .asciz "Invalid Sector Amount. "
+rebootmsg:          .asciz "Press any key to reboot.\n"
 
 .fill (510-(.-_start)), 1, 0  # Pad with nulls up to 510 bytes (excl. boot magic)
-BootMagic:  .int 0xAA55     # magic word for BIOS
+BootMagic: # magic bytes for BIOS
+  .byte 0xAA
+  .byte 0x55
