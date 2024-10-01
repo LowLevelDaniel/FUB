@@ -2,92 +2,63 @@
 .intel_syntax noprefix
 .text
 
+.macro mReboot
+  # machine language to jump to FFFF:0000 (reboot)
+  .byte  0xEA 
+  .word  0x0000
+  .word  0xFFFF
+.endm
+
+.macro mPrint str
+  push si
+  lea  si, \str
+  call CstrPrint
+  pop si
+.endm
+
+.macro mError str
+  mPrint \str     # Print reboot msg
+  call WaitKeyPress  # wait for user key press
+  mReboot
+.endm
+
 .global _start
 
 _start:
   jmp short start                    # jump to beginning of code
   nop
 
-bootsector:
- iOEM:          .ascii "FUB     "    # OEM String
- iSectSize:     .word  0x200         # bytes per sector
- iClustSize:    .byte  1             # sectors per cluster
- iResSect:      .word  1             # #of reserved sectors
- iFatCnt:       .byte  2             # #of FAT copies
- iRootSize:     .word  224           # size of root directory
- iTotalSect:    .word  2880          # total # of sectors if over 32 MB
- iMedia:        .byte  0xF0          # media Descriptor
- iFatSize:      .word  9             # size of each FAT
- iTrackSect:    .word  9             # sectors per track
- iHeadCnt:      .word  2             # number of read-write heads
- iHiddenSect:   .int   0             # number of hidden sectors
- iSect32:       .int   0             # # sectors for over 32 MB
- iBootDrive:    .byte  0             # holds drive that the boot sector came from
- iReserved:     .byte  0             # reserved, empty
- iBootSign:     .byte  0x29          # extended boot sector signature
- iVolID:        .ascii "seri"        # disk serial
- acVolumeLabel: .ascii "MYVOLUME   " # volume label
- acFSType:      .ascii "        "    # file system type
+.include "sector1/bootinfo.s"
+.include "sector1/keyboard.s"
+.include "sector1/display.s"
 
-// Error Handling
-  .func WriteString
-  WriteString:
-    lodsb                   # load byte at ds:si into al (advancing si)
-    or     al, al           # test if character is 0 (end)
-    jz     WriteString_done # jump to end if 0.
-
-    mov    ah, 0x0e          # Subfunction 0xe of int 10h (video teletype output)
-    mov    bx, 9            # Set bh (page nr) to 0, and bl (attribute) to white (9)
-    int    0x10             # call BIOS interrupt.
-
-    jmp    WriteString      # Repeat for next character.
-  WriteString_done:
-    retw
-  .endfunc
-
-  .func Reboot
-  Reboot:
-    lea    si, rebootmsg # Load address of reboot message into si
-    call   WriteString   # print the string
-    xor    ax, ax        # subfuction 0
-    int    0x16          # call bios to wait for key
-    .byte  0xEA          # machine language to jump to FFFF:0000 (reboot) 
-    .word  0x0000
-    .word  0xFFFF
-  .endfunc
-// Sector2 Setup
 .func LoadKernel
 LoadKernel:
   pusha
-  push dx
 
-  mov bx, 0x7e00
-	mov dh, 15
-	mov dl, iBootDrive
-  mov ah, 0x02
-	mov al, dh
-	mov ch, 0x00
-	mov dh, 0x00
-	mov cl, 0x02
-  int 0x13           # Call BIOS interrupt
+  xor ax, ax
+  mov es, ax
 
-  # Jump to error handling if carry flag is set
-  lea  si, diskreaderr
-  jc disk_read_error
+  mov ah, 2              # subfuction 2 - read floppy/hard disk in CHS mode
+  mov al, 0x01           # Number of sectors to read
+  mov ch, 0x00           # Cylinder number
+  mov cl, 0x02           # Sector number (starts at 1)
+  mov dh, 0x00           # Head number
+  mov dl, 0x80           # Drive number (0x80 for first hard disk)
+  mov bx, 0x7E00         # ES:BX points to buffer (0x7E00:0000)
+  int 0x13               # bios interrupt
+  jc LoadKernel_read_err # check for success 
 
-  # check if we read expected count of sectors
-  # if not, show the message with error
-  pop dx
-  cmp dh, al
-  lea  si, invalidsectorcount
-  jne disk_read_error
+  # log sucess
+  mPrint disksucess
 
-  # restore register values and ret
+  # Jump to the second stage bootloader
+  jmp 0x07E0:0x0000
+
   popa
   ret
-disk_read_error:
-  call WriteString
-  call Reboot
+LoadKernel_read_err:
+  mError diskreaderr
 .endfunc
 
 start:
@@ -99,36 +70,32 @@ start:
   mov  es, ax          # ES = CS = 0x0
   mov  ss, ax          # SS = CS = 0x0
   mov  sp, 0x7C00      # Stack grows down from offset 0x7C00 toward 0x0000.
-  sti  
+  sti
 
   # Display "loading" message:
-  lea  si, loadmsg
-  call WriteString
+  mPrint loadmsg
 
   # Reset disk system.
   # Jump to bootFailure on error.
   mov  dl, iBootDrive  # drive to reset
   xor  ax, ax          # subfunction 0
   int  0x13            # call interrupt 13h
-  jc   bootFailure     # display error message if carry set (error) 
+  jc   start_DiskResetError     # display error message if carry set (error) 
 
-  # load second stage bootloader from disk
-  # sector2 will be at a set offset straight after this 512 byte boot sector
+  # Load Second Stage Boootloader
   call LoadKernel
 
-  # End of loader, for now. Reboot.
-  call Reboot
+  # something has went wrong, control shouldn't be handed back here
+  mError rebootmsg
 
-bootFailure:
-  lea  si, diskreseterr
-  call WriteString
-  call Reboot
+start_DiskResetError:
+  mError diskreseterr
 
 # PROGRAM DATA
 loadmsg:            .asciz "Loading OS...\n"
+disksucess:         .asciz "Loaded Disk, Now Executing...\n"
 diskreseterr:       .asciz "Disk Reset Error. "
 diskreaderr:        .asciz "Disk read Error. "
-invalidsectorcount: .asciz "Invalid Sector Amount. "
 rebootmsg:          .asciz "Press any key to reboot.\n"
 
 .fill (510-(.-_start)), 1, 0  # Pad with nulls up to 510 bytes (excl. boot magic)
