@@ -1,50 +1,39 @@
+as = nasm
+as_flags = -f elf
+
+cc = gcc
+cc_flags = -m32 -ffreestanding -I./sector2/ -nostdlib -nodefaultlibs -fno-exceptions -O0 -fno-pic -fno-pie
+
+ld = ld
+ld_flags = --oformat binary -m elf_i386
+
+asm_sources = $(shell find sector2/ -name '*.asm')
+asm_includes = $(shell find sector2/ -name '*.inc')
+asm_objects = $(asm_sources:.asm=.o)
+sector_2 = $(asm_objects)
+
 all: boot.img
 
-AS = as
-OTHER_AS = nasm
-LD = ld
+# link
+sector1/boot.bin: sector1/boot.asm
+	${as} -f bin $< -o $@
 
-sector1/boot.bin: sector1/boot.s
-	${AS} sector1/boot.s -o sector1/boot.o
-	${LD} -o $@ -Ttext 0x7C00 --oformat binary sector1/boot.o
+sector2/kernel.bin: ${sector_2}
+	${ld} ${ld_flags} -o $@ -T ldscripts/stage2.ld  $^
 
-SOURCES = $(shell find sector2/cpu sector2/drivers sector2/include sector2/kernel sector2/libc -name '*.c')
-HEADERS = $(shell find sector2/cpu sector2/drivers sector2/include sector2/kernel sector2/libc -name '*.h')
-CFLAGS = -ffreestanding -Wall -Wextra -fno-exceptions -m32 -std=c11 -fno-stack-protector -fno-pic -fno-pie -O0
-OBJ = ${SOURCES:.c=.o}
-CC = gcc
+# compile
+%.o: %.asm ${asm_includes}
+	${as} ${as_flags} $< -o $@
 
-sector2/main.bin: sector2/cpu/interrupt.asm sector1/kernel_entry.s ${OBJ}
-	${AS} --32 sector1/kernel_entry.s -o sector1/kernel_entry.o
-	${OTHER_AS} -f elf sector2/cpu/interrupt.asm -o sector2/cpu/interrupt.o
-	${LD} -no-pie -m elf_i386 -o $@ -Ttext 0x1000 ${OBJ} sector2/cpu/interrupt.o sector1/kernel_entry.o --oformat binary
+%.o: %.c
+	${cc} ${cc_flags} -c $< -o $@
 
-test_sector2/main.bin: test_sector2/main.s
-	${AS} test_sector2/main.s -o sector1/kernel_entry.o
-	${LD} --oformat binary -o $@ -Ttext 0x1000 sector1/kernel_entry.o
-
-boot.img: sector1/boot.bin sector2/main.bin
-	dd if=sector1/boot.bin of=boot.img bs=512 count=1
-	dd if=sector2/main.bin of=boot.img bs=512 seek=1
-
-testboot.img: sector1/boot.bin test_sector2/main.bin
-	dd if=sector1/boot.bin      of=testboot.img bs=512 count=1
-	dd if=test_sector2/main.bin of=testboot.img bs=512 seek=1
-
-itest: boot.img
-	qemu-system-i386 -drive format=raw,file=boot.img -nographic -s
-test: boot.img
-	qemu-system-x86_64 -drive format=raw,file=boot.img -nographic -s
-
-itestboot: testboot.img
-	qemu-system-i386 -drive format=raw,file=testboot.img -nographic -s
-testboot: testboot.img
-	qemu-system-x86_64 -drive format=raw,file=testboot.img -nographic -s
-
-%.o: %.c ${HEADERS}
-	${CC} ${CFLAGS} -c $< -o $@
+# create image
+boot.img: sector1/boot.bin sector2/kernel.bin
+	cat $^ > $@
 
 boot.iso: boot.img
-	ccd2iso $< $@
-testboot.iso: testboot.img
-	ccd2iso $< $@
+	dd if=$< of=$@ bs=2048 conv=sync
+
+cleanobj: ${sector_2}
+	rm ${sector_2}
