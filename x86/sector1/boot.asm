@@ -94,6 +94,10 @@ init_pm:
 	mov fs, ax
 	mov gs, ax
 
+  ;; update base and stack pointers
+	mov ebp, 0x90000 ; Literally just copy and pasted, i don't understand this
+	mov esp, ebp
+
   ; fall through on purpose
 execute_kernel:
 	call KERNEL_OFFSET

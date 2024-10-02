@@ -1,16 +1,20 @@
 as = nasm
-as_flags = -f elf
+as_flags = -f elf -O0 # remove optimizations for sanity sakes
 
 cc = gcc
-cc_flags = -m32 -ffreestanding -I./sector2/ -nostdlib -nodefaultlibs -fno-exceptions -O0 -fno-pic -fno-pie
+cc_flags = -m32 -ffreestanding -I./sector2/ -nostdlib -nodefaultlibs -fno-exceptions -O0 -fno-pic -fno-pie --save-temps # -nostdlib -nodefaultlibs -nostartfiles
 
 ld = ld
-ld_flags = --oformat binary -m elf_i386
+ld_flags = --oformat binary -m elf_i386 -T ldscripts/stage2.ld
 
 asm_sources = $(shell find sector2/ -name '*.asm')
 asm_includes = $(shell find sector2/ -name '*.inc')
 asm_objects = $(asm_sources:.asm=.o)
-sector_2 = $(asm_objects)
+
+c_sources = $(shell find sector2/ -name '*.c')
+c_objects = $(c_sources:.c=.o)
+
+sector_2 = $(asm_objects) ${c_objects}
 
 all: boot.img
 
@@ -19,7 +23,7 @@ sector1/boot.bin: sector1/boot.asm
 	${as} -f bin $< -o $@
 
 sector2/kernel.bin: ${sector_2}
-	${ld} ${ld_flags} -o $@ -T ldscripts/stage2.ld  $^
+	${ld} ${ld_flags} -o $@  $^
 
 # compile
 %.o: %.asm ${asm_includes}
