@@ -1,4 +1,4 @@
-#include "clib/stdint.h"
+#include "libc/stdint.h"
 
 // Address of kernel code segment
 #define KERNEL_CS 0x08

@@ -1,6 +1,4 @@
-void itoa(int n, char str[]);
-void reverse(char s[]);
-int strlen(char s[]);
-void backspace(char s[]);
-void append(char s[], char n);
-int strcmp(char s1[], char s2[]);
+/*
+  Copy data from two buffers for a given integral byte size
+*/
+void memcpy(void *dest, const void *src, int byte_size);

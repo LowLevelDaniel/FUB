@@ -8,6 +8,9 @@ global halt     ; should probably be moved to a seperate file
 
 section .KernelEntryPoint ; to tell the linker this section goes first
 _start:
+  ; just ensure interrupt flag ins't set before we create the interrupt descriptor table
+  ; cli
+
   ; Set stack pointer
   mov esp, stack_top
   mov ebp, esp

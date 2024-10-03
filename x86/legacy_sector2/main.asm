@@ -8,9 +8,6 @@ global halt     ; should probably be moved to a seperate file
 
 section .KernelEntryPoint ; to tell the linker this section goes first
 _start:
-  ; just ensure interrupt flag ins't set before we create the interrupt descriptor table
-  ; cli
-
   ; Set stack pointer
   mov esp, stack_top
   mov ebp, esp
@@ -25,8 +22,6 @@ reboot:
   db  0xEA ; machine code for reboot (don't ask me how this works)
   dw  0x0000
   dw  0xFFFF
-
-%include "sector2/drivers/idt.inc"
 
 section .bss
 raw_idt_table resb 256 * 8 ; 256 entries, each 8 bytes
