@@ -1,4 +1,4 @@
-#include "../include/stdint.h"
+#include "libc/stdint.h"
 
 // Address in memory which is mapped to video
 #define VIDEO_ADDRESS 0xB8000
@@ -19,4 +19,4 @@
 // Public API
 void screen_write(const char *message);
 void screen_writeo(const char *message, int offste); // write offset
-void screen_write();
+void screen_clear();

@@ -2,7 +2,7 @@ as = nasm
 as_flags = -f elf -O0 # remove optimizations for sanity sakes
 
 cc = gcc
-cc_flags = -m32 -ffreestanding -I./sector2/ -nostdlib -nodefaultlibs -fno-exceptions -O0 -fno-pic -fno-pie # -nostdlib -nodefaultlibs -nostartfiles
+cc_flags = -m32 -ffreestanding -I./sector2/ -nostdlib -nodefaultlibs -nostdinc -fno-exceptions -O0 -fno-pic -fno-pie
 
 ld = ld
 ld_flags = --oformat binary -m elf_i386 -T ldscripts/stage2.ld
