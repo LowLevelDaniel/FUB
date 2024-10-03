@@ -4,14 +4,12 @@
 #include "../libc/string.h"
 
 void kernel_main() {
-  // return;
+  clear_screen();
+  isr_install();
+  irq_install();
 
-  // clear_screen();
-  // isr_install();
-  // irq_install();
-
-  // print("Type something, it will go through the kernel\n");
-  // print("Type END to halt the CPU\n> ");
+  print("Type something, it will go through the kernel\n");
+  print("Type END to halt the CPU\n> ");
 }
 
 void user_input(char *input) {

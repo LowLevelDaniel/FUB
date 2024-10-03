@@ -56,7 +56,7 @@ load_kernel:
   mov es, ax
 
   mov ah, 2              ; subfuction 2 - read floppy/hard disk in CHS mode
-  mov al, 0x01           ; Number of sectors to read
+  mov al, 0x0D           ; Number of sectors to read
   mov ch, 0x00           ; Cylinder number
   mov cl, 0x02           ; Sector number (starts at 1)
   mov dh, 0x00           ; Head number
@@ -100,6 +100,7 @@ init_pm:
 
   ; fall through on purpose
 execute_kernel:
+  cli ; ensure interrupts are turned off
 	call KERNEL_OFFSET
 
 ; includes
