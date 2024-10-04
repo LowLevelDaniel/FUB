@@ -6,46 +6,38 @@
 #include "libfub/port.h"
 #include "libc/string.h" // memcpy
 
-int print_char(char character, int offset, int attribute);
-int get_cursor_offset();
-int set_cursor_offset(int offset);
-int get_offset(int col, int row);
-int get_row_from_offset(int offset);
-int get_col_from_offset(int offset);
-
-// ---------------- PUBLIC API ---------------- //
+// ---------------- MAIN API ---------------- //
 
 // Prints string at current position of the cursor
-void screen_write(const char *message) { screen_writeo(message, get_cursor_offset()); }
+int swrite(const char *message, int attribute) { return swriteo(message, get_cursor_offset(), attribute); }
 
 // Prints string at the specified position
-void screen_writeo(const char *message, int offset) {
+int swriteo(const char *message, int offset, int attribute) {
   while (*message) {
-    offset = print_char(
+    offset = sputc(
       *message,
       offset,
       WHITE_ON_BLACK
     );
     ++message;
   }
+  return offset;
 }
 
 // Clear the entire screen and positioning cursor to (0, 0)
-void screen_clear() {
-  for (int row = 0; row < MAX_ROWS; row++) {
-    for (int col = 0; col < MAX_COLS; col++) {
-      print_char(' ', get_offset(col, row), WHITE_ON_BLACK);
-    }
+void sclear() {
+  set_cursor_offset(get_offset(0, 0)); // loop from the first 
+  int offset = get_cursor_offset();
+  for (int i = 0; i < MAX_ROWS * MAX_COLS; ++i) {
+    offset = sputc(' ', offset, WHITE_ON_BLACK);
   }
   set_cursor_offset(get_offset(0, 0));
 }
 
-// ---------------- PRIVATE API ---------------- //
-
-// Prints char at specified column and row
+// Prints char at specified offset
 // Writes direct into video memory
 // Handles scrolling and new-line character
-int print_char(char character, int offset, int attribute) {
+int sputc(char character, int offset, int attribute) {
   if (!attribute) attribute = WHITE_ON_BLACK;
 
   char *video_memory_ptr = (char*)VIDEO_ADDRESS;
@@ -82,6 +74,8 @@ int print_char(char character, int offset, int attribute) {
   return offset;
 }
 
+// ---------------- GETTERS / SETTERS API ---------------- //
+
 // Get current cursor position
 // Implementation based on low-level port I/O
 // Write to CTRL register 14 (0xE) and read Hi byte
@@ -111,7 +105,7 @@ int set_cursor_offset(int offset) {
   return offset * 2;
 }
 
-// Get offset from column and row number
+// Get offset offset row number
 int get_offset(int col, int row) {
   return 2 * (row * MAX_COLS + col);
 }

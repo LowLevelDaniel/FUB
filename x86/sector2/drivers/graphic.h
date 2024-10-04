@@ -17,6 +17,15 @@
 #define REG_SCREEN_DATA 0x3D5
 
 // Public API
-void screen_write(const char *message);
-void screen_writeo(const char *message, int offste); // write offset
-void screen_clear();
+int swrite(const char *message, int attribute);
+int swriteo(const char *message, int offset, int attribute); // write offset
+int sputc(char in, int offset, int attribute);
+void sclear();
+
+// Getters && Setters
+int get_offset(int col, int row);
+int get_row_from_offset(int offset);
+int get_col_from_offset(int offset);
+
+int get_cursor_offset();
+int set_cursor_offset(int offset);
