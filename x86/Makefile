@@ -38,7 +38,14 @@ boot.img: sector1/boot.bin sector2/kernel.bin
 	cat $^ > $@
 
 boot.iso: boot.img
-	dd if=$< of=$@ bs=2048 conv=sync
+	xorriso -as mkisofs \
+  	-b boot.img \
+  	-no-emul-boot \
+  	-boot-load-size 12 \
+  	-boot-info-table \
+  	-o boot.iso \
+  	.
+
 
 cleanobj: ${sector_2}
 	rm ${sector_2}

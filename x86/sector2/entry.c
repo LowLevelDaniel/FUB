@@ -21,8 +21,8 @@ extern void shutdown(void);
 * nothing should be saved through _reset calls but is instead like a short reboot
 */
 void _reset() {
-  
   _start();
+  // __asm__ ("jmp _start"); // this would also work and would be more explicit for assembly code as the code will not return here
 }
 
 /*

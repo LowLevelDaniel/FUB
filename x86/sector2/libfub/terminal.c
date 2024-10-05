@@ -30,6 +30,7 @@ static void terminal_keyboard_callback(registers_t regs) {
     return;
   }
   if (scancode == BACKSPACE) {
+    if (key_bufferI == 0) goto exit; // removes weird errors
     --key_bufferI;
     // TODO: Clean This Up
     int offset = get_cursor_offset();
@@ -51,6 +52,7 @@ static void terminal_keyboard_callback(registers_t regs) {
     sputc(key_buffer[key_bufferI],get_cursor_offset(),WHITE_ON_BLACK);
     ++key_bufferI;
   }
+exit:
   (void)(regs);
 }
 
@@ -82,6 +84,24 @@ void terminal_input(const char *cstr_command) {
     sputc('\n',get_cursor_offset(),WHITE_ON_BLACK);
     swrite(&cstr_command[5],WHITE_ON_BLACK); // write the first argument
     swrite("\n"COMMAND_LINE_PREFIX,WHITE_ON_BLACK);
+  } else if (strcmp(cstr_command,"HELP") == 0) {
+    swrite(
+      "\n"
+      "EXIT \"exits the terminal and soft resets the system\"\n"
+      "CLEAR \"clear the screen\"\n"
+      "ECHO \"prints out the first argument given (seperate arguments with spaces i.e ECHO hello)\"\n"
+      "HELP \"Displays this menu\"\n"
+      "CHELP \"should only be used for debugging purposees, displays internal commands used by the system\"\n"
+      COMMAND_LINE_PREFIX
+      , WHITE_ON_BLACK
+    );
+  } else if (strcmp(cstr_command,"CHELP") == 0) {
+    swrite(
+      "\n"
+      "$$%%INVL \"Displays the Command Length\"\n"
+      COMMAND_LINE_PREFIX
+      , WHITE_ON_BLACK
+    );
   } else {
     swrite("\nInvalid Command '",WHITE_ON_BLACK);
     swrite(cstr_command,WHITE_ON_BLACK);
