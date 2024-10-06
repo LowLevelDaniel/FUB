@@ -5,4 +5,5 @@
 *.elf
 *.txt
 *.iso
+*.vdi
 res/

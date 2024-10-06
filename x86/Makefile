@@ -37,15 +37,8 @@ sector2/kernel.bin: ${sector_2}
 boot.img: sector1/boot.bin sector2/kernel.bin
 	cat $^ > $@
 
-boot.iso: boot.img
-	xorriso -as mkisofs \
-  	-b boot.img \
-  	-no-emul-boot \
-  	-boot-load-size 12 \
-  	-boot-info-table \
-  	-o boot.iso \
-  	.
-
+boot.vdi: boot.img
+	qemu-img convert -f raw -O vdi boot.img boot.vdi
 
 cleanobj: ${sector_2}
 	rm ${sector_2}
