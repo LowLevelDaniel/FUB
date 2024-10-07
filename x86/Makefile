@@ -9,6 +9,7 @@ ld_flags = --oformat binary -m elf_i386 -T ldscripts/stage2.ld
 
 asm_sources = $(shell find sector2/ -name '*.asm')
 asm_includes = $(shell find sector2/ -name '*.inc')
+asm_s1_includes = $(shell find sector1/ -name '*.inc')
 asm_objects = $(asm_sources:.asm=.o)
 
 c_sources = $(shell find sector2/ -name '*.c')
@@ -19,7 +20,7 @@ sector_2 = ${asm_objects} ${c_objects}
 all: boot.img
 
 # link
-sector1/boot.bin: sector1/boot.asm
+sector1/boot.bin: sector1/boot.asm ${asm_s1_includes}
 	${as} -f bin $< -o $@
 
 sector2/kernel.bin: ${sector_2}

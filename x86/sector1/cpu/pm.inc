@@ -19,11 +19,20 @@ switch_to_pm:
 	or eax, 0x1
 	mov cr0, eax
 
+	;; enable a20
+	call enable_a20
+	jc 
+
 	;; far jump to 32 bit instructions
 	;; so we can be sure processor has done
 	;; all other operations before switch
 	;; at this moment we can say bye to 16-bit Real Mode
 	jmp CODE_SEG:init_pm
+
+__a20_fail:
+	jmp $
+
+%include "sector1/cpu/a20.inc"
 
 [bits 32]
 

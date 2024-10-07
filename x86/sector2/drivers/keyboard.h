@@ -18,6 +18,6 @@ extern const char sc_ascii[SC_MAX];
 
 #define CAPS_LOCK 0x3A
 
-#define RELASE_MUL 128
+#define RELASE_MUL 0x80
 
 const char *hexifyUC(unsigned char ch);

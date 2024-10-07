@@ -42,6 +42,7 @@ void kernel_main() {
   // Load Boot TUI
   // Not Implemented Yet
     run_terminal(); // calls _reset on exit
+  // sclear();
   return;
 }
 
