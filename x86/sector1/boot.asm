@@ -7,7 +7,6 @@
 [bits 16]
 
 
-
 _start:
   ; disable interruptions
   cli
@@ -58,7 +57,7 @@ load_kernel:
   mov es, ax
 
   mov ah, 2              ; subfuction 2 - read floppy/hard disk in CHS mode
-  mov al, 0x0B           ; Number of sectors to read
+  mov al, 0x0C           ; Number of sectors to read
   mov ch, 0x00           ; Cylinder number
   mov cl, 0x02           ; Sector number (starts at 1)
   mov dh, 0x00           ; Head number
