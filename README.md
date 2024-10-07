@@ -1,5 +1,8 @@
 # Flexible Unified Bootloader
-
+A flexible unified bootloader with delusions of grandeur. <br>
+<br>
+You can load this with qemu through the classic .img file and the run.sh file <br>
+or this can be loaded with virtual box through the virtual disk image (.vdi) <br>
 
 ## Reference
 [(BIG THANKS) ghaiklor-os-gcc](https://github.com/ghaiklor/ghaiklor-os-gcc) <br>
